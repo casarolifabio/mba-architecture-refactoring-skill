@@ -1,6 +1,6 @@
 # ecommerce-api-legacy
 
-LMS API (com fluxo de checkout) em Node.js/Express usada como entrada do desafio `refactor-arch`.
+LMS API (checkout) em Node.js/Express — refatorada para MVC (`refactor-arch` Phase 3).
 
 ## Como rodar
 
@@ -9,6 +9,17 @@ npm install
 npm start
 ```
 
-A aplicação sobe em `http://localhost:3000`. O banco SQLite é em memória e já carrega seeds automaticamente no boot.
+Variáveis de ambiente opcionais: `PORT`, `DB_PATH`, `PAYMENT_GATEWAY_KEY`, `SMTP_USER`, `DB_USER`, `DB_PASS`.  
+Default `PAYMENT_GATEWAY_KEY=dev-payment-key` é **placeholder de desenvolvimento**.
 
-Exemplos de requisições estão em `api.http`.
+A aplicação sobe em `http://localhost:3000`. O banco SQLite padrão é `:memory:` e carrega seeds no boot.
+
+Exemplos de requisições em `api.http`.
+
+## Smoke tests
+
+```bash
+node scripts/smoke_test.js
+```
+
+Esperado: **8 passed / 0 failed** (sobe porta efêmera e encerra o processo).

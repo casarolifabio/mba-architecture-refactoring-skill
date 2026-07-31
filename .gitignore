@@ -1,4 +1,7 @@
 .env
+.env.*
+!.env.example
+
 node_modules/
 
 # Python
@@ -7,6 +10,13 @@ __pycache__/
 .venv/
 venv/
 
-# SQLite
+# SQLite / local DBs
 *.db
+*.sqlite
+*.sqlite3
 instance/
+
+# OS / logs / temp
+.DS_Store
+*.log
+*.tmp
