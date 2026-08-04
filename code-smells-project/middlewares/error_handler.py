@@ -19,6 +19,13 @@ class UnauthorizedError(Exception):
         self.status_code = 401
 
 
+class ForbiddenError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+        self.status_code = 403
+
+
 def register_error_handlers(app):
     @app.errorhandler(ValidationError)
     def handle_validation(err):
@@ -30,6 +37,10 @@ def register_error_handlers(app):
 
     @app.errorhandler(UnauthorizedError)
     def handle_unauthorized(err):
+        return jsonify({"erro": err.message, "sucesso": False}), err.status_code
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden(err):
         return jsonify({"erro": err.message, "sucesso": False}), err.status_code
 
     @app.errorhandler(404)

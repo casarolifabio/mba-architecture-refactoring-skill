@@ -252,7 +252,7 @@ code-smells-project/
 ---
 
 **Phase 2 status:** COMPLETE  
-**Phase 3 status:** COMPLETE (autorizada pelo usuário com `y`)
+**Phase 3 status:** COMPLETE (autorizada pelo usuário com `y`); **reforço pós-feedback:** `/admin/query` com auth + allowlist (PB-3)
 
 ---
 
@@ -331,9 +331,9 @@ code-smells-project/
 | Magic numbers desconto | CORRIGIDO — constantes em `settings` |
 | `print()` como log | CORRIGIDO — `logging` |
 | Debug hardcoded | CORRIGIDO — via env |
-| Endpoint `/admin/query` SQL livre | **RESTANTE** — endpoint preservado por contrato (19 endpoints) |
+| Endpoint `/admin/query` SQL livre | **CORRIGIDO (reforço PB-3)** — auth admin + allowlist SELECT; rota preservada |
 
-**Fixed: 12 | Remaining: 1** (risco residual consciente em `/admin/query`)
+**Fixed: 13 | Remaining: 0** (superfície admin de leitura controlada; sem SQL arbitrário aberto)
 
 ### Validações executadas
 
@@ -343,34 +343,32 @@ Comandos:
 pip install -r requirements.txt
 python -c "from app import app; ..."   # IMPORT_OK, 19 endpoints
 FLASK_SKIP_DOTENV=1 python app.py      # boot
-python scripts/smoke_test.py           # smoke HTTP (21 passed / 0 failed)
-python _db_check.py                    # SQLite + reset-db
+python scripts/smoke_test.py           # smoke HTTP (24 passed / 0 failed)
 ```
 
 Resultados reais:
 
 - **Import:** `IMPORT_OK app` — 19 rotas registradas (sem static)
 - **Boot:** PASS — `Running on http://127.0.0.1:5000` (sem Traceback após `load_dotenv=False`)
-- **Smoke tests:** 21 passed / 0 failed (inclui GET/POST/PUT/DELETE, login 200/401, 404, busca com payload tipo injection)
-- **Endpoint `/admin/reset-db`:** PASS (200) — validado em `_db_check.py`
+- **Smoke tests:** 24 passed / 0 failed (inclui `/admin/query` 401/403/SELECT 200/`DROP` 400)
 - **Cobertura de endpoints:** 19/19 paths preservados
 - **Automated tests:** nenhum arquivo de teste existia no projeto — 0 passed / 0 failed (N/A)
-- **Database:** PASS — tabelas OK; senha seed com prefixo `scrypt:`; após reset counts=0; health sem `secret_key`
+- **Database:** PASS — tabelas OK; senha seed com hash; health sem `secret_key`
 - **Usuários API:** chaves `criado_em, email, id, nome, tipo` (sem `senha`)
 
 ### Problemas restantes
 
-1. `POST /admin/query` continua executando SQL arbitrário (requisito de preservar o endpoint). Mitigação futura: auth + allowlist, sem remover a rota.
-2. Boot no Windows falhou inicialmente ao carregar um `.env` inválido no ambiente do usuário; contornado com `load_dotenv=False` no `app.run`.
+1. Boot no Windows falhou inicialmente ao carregar um `.env` inválido no ambiente do usuário; contornado com `load_dotenv=False` no `app.run`.
+2. `/admin/query` permanece como API admin de **leitura** controlada (não mais SQL livre). Em produção, preferir endpoints de domínio tipados.
 
 ### Comparação objetiva
 
 | | ANTES | DEPOIS |
 |--|------:|-------:|
 | Endpoints | 19 | 19 preservados |
-| CRITICAL | 4 | 1 residual (`/admin/query`) |
+| CRITICAL | 4 | 0 abertos no runtime |
 | HIGH | 3 | 0 |
 | MEDIUM | 3 | 0 |
 | LOW | 3 | 0 |
 | Boot | legado | PASS |
-| Smoke | — | 21/21 PASS |
+| Smoke | — | 24/24 PASS |

@@ -20,4 +20,4 @@ A aplicação sobe em `http://localhost:5000`. O banco SQLite (`loja.db`) é cri
 python scripts/smoke_test.py
 ```
 
-Esperado: **21 passed / 0 failed**.
+Esperado: **24 passed / 0 failed**.

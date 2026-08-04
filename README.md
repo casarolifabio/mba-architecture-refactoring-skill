@@ -194,11 +194,11 @@ O playbook ordena: inventário de contratos → config/secrets → estrutura MVC
 #### Depois
 
 - Arquitetura: MVC (`config/`, `models/`, `controllers/`, `views/`, `middlewares/`, `validators/`)
-- Problemas eliminados: **12** (SQLi parametrizado, secrets via env, hash de senha, God Module, health sem secret, `flask.g`, N+1→JOIN, validator, error middleware, constantes, logging, debug via env)
-- Problemas restantes: **1** — `POST /admin/query` ainda aceita SQL livre (endpoint preservado por contrato)
+- Problemas eliminados: **13** (inclui reforço PB-3 em `/admin/query`: auth admin + allowlist SELECT)
+- Problemas restantes: **0** CRITICAL/HIGH abertos no runtime (endpoint preservado com controles)
 - Boot: **PASS** (`python app.py`, sem Traceback)
 - Endpoints: **19/19** preservados
-- Smoke: **21/21 PASS** + `POST /admin/reset-db` PASS
+- Smoke: **24/24 PASS** (contagem ampliada para cobrir 401/403/SELECT/DROP em `/admin/query`; histórico Phase 3 era 21)
 - Testes automatizados: nenhum existia no repositório (0/0)
 
 ### Projeto 2 — `ecommerce-api-legacy`
@@ -243,7 +243,7 @@ O playbook ordena: inventário de contratos → config/secrets → estrutura MVC
 
 | Projeto | Stack | Findings | Corrigidos | Restantes | Endpoints | Boot | Validação |
 | ------- | ----- | -------: | ---------: | --------: | --------: | ---- | --------- |
-| code-smells-project | Python/Flask + sqlite3 | 13 | 12 | 1 (`/admin/query`) | 19/19 | PASS | Smoke 21/21 |
+| code-smells-project | Python/Flask + sqlite3 | 13 | 13 | 0 | 19/19 | PASS | Smoke 24/24 |
 | ecommerce-api-legacy | Node/Express + sqlite3 | 11 | 10 | 1 parcial (DELETE `send`) | 3/3 | PASS | Smoke 8/8 |
 | task-manager-api | Python/Flask + SQLAlchemy | 12 | 12 | 0 | 22/22 | PASS | Smoke 26/26 |
 
@@ -287,6 +287,7 @@ O playbook ordena: inventário de contratos → config/secrets → estrutura MVC
 - [x] routes/views separadas
 - [x] controllers separados
 - [x] error handling centralizado
+- [x] PB-3 em `/admin/query` (auth admin + allowlist SELECT)
 - [x] aplicação inicia
 - [x] endpoints funcionam
 
@@ -396,7 +397,7 @@ cd task-manager-api && python app.py
 Os scripts usam banco temporário / porta efêmera e **não deixam processos pendurados**. São **smoke tests** (não testes unitários automatizados de suíte).
 
 ```bash
-# Projeto 1 — esperado: 21 passed / 0 failed
+# Projeto 1 — esperado: 24 passed / 0 failed
 cd code-smells-project
 python scripts/smoke_test.py
 
@@ -433,7 +434,7 @@ A evidência desta entrega é **textual e reproduzível** (logs de boot + saída
 
 | Projeto | Smoke script | Resultado reexecutado |
 | ------- | ------------ | --------------------- |
-| code-smells-project | `python scripts/smoke_test.py` | **21 passed / 0 failed** |
+| code-smells-project | `python scripts/smoke_test.py` | **24 passed / 0 failed** |
 | ecommerce-api-legacy | `node scripts/smoke_test.js` | **8 passed / 0 failed** |
 | task-manager-api | `python scripts/smoke_test.py` | **26 passed / 0 failed** |
 
@@ -456,7 +457,13 @@ Automated unit tests: **0** em todos os projetos (não existiam no boilerplate).
 
 ### Projeto 1 — `POST /admin/query`
 
-Endpoint legado **preservado** para manter o contrato dos 19 endpoints. Continua permitindo SQL arbitrário (risco conhecido). Em produção: remover, exigir autenticação forte e allowlist, ou substituir por operações de domínio tipadas. **Não foi removido** porque a regra de entrega exige preservação de contratos.
+Endpoint legado **preservado** (contrato dos 19 endpoints), mas **reforçado na Phase 3 (PB-3)**:
+- autenticação obrigatória (Basic Auth ou `email`/`senha` de usuário `tipo=admin`);
+- allowlist: somente um `SELECT` contra tabelas permitidas;
+- rejeição de multi-statement, comentários e DML/DDL (`DROP`/`DELETE`/etc. → 400);
+- execução via `models/admin_model.py` após validação em `validators/admin_query_validator.py`.
+
+Risco residual LOW: ainda é uma superfície admin de leitura SQL; em produção preferir APIs de domínio tipadas.
 
 ### Projeto 2 — `DELETE /api/users/:id`
 

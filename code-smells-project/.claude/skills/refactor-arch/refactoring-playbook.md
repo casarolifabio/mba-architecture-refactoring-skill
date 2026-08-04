@@ -128,9 +128,9 @@ db.run("DELETE FROM users WHERE id = " + id);
 db.run("DELETE FROM users WHERE id = ?", [id]);
 ```
 
-**Passos:** Substituir concat por placeholders; mover SQL da rota para model; eliminar `/admin/query` ou restringir + auth.
+**Passos:** Substituir concat por placeholders; mover SQL da rota para model; **se o endpoint de SQL livre for preservado por contrato, torná-lo obrigatoriamente: (1) autenticado (papel admin), (2) allowlist de comandos/tabelas (ex.: só SELECT), (3) rejeitar multi-statement/DML/DDL — caso contrário, eliminar a rota.**
 
-**Validação:** CRUD funciona; tentativa de injeção falha com segurança.
+**Validação:** CRUD funciona; tentativa de injeção falha com segurança; `/admin/query` sem auth retorna 401; não-admin 403; `DROP`/`DELETE` rejeitados.
 
 **Riscos:** Mudar tipo de parâmetro (string vs int).
 

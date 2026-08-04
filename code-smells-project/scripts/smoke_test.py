@@ -133,8 +133,43 @@ def main() -> int:
     r = client.get("/relatorios/vendas")
     check("GET /relatorios/vendas", r.status_code == 200)
 
+    # POST /admin/query — PB-3: auth + allowlist (não é mais SQL livre)
     r = client.post("/admin/query", json={"sql": "SELECT COUNT(*) AS c FROM produtos"})
-    check("POST /admin/query", r.status_code == 200 and r.get_json().get("sucesso") is True)
+    check("POST /admin/query sem auth 401", r.status_code == 401)
+
+    r = client.post(
+        "/admin/query",
+        json={
+            "email": "joao@email.com",
+            "senha": "123456",
+            "sql": "SELECT COUNT(*) AS c FROM produtos",
+        },
+    )
+    check("POST /admin/query cliente 403", r.status_code == 403)
+
+    r = client.post(
+        "/admin/query",
+        json={
+            "email": "admin@loja.com",
+            "senha": "admin123",
+            "sql": "SELECT COUNT(*) AS c FROM produtos",
+        },
+    )
+    check(
+        "POST /admin/query admin SELECT 200",
+        r.status_code == 200 and r.get_json().get("sucesso") is True,
+        str(r.get_json()),
+    )
+
+    r = client.post(
+        "/admin/query",
+        json={
+            "email": "admin@loja.com",
+            "senha": "admin123",
+            "sql": "DROP TABLE produtos",
+        },
+    )
+    check("POST /admin/query DROP rejeitado", r.status_code == 400)
 
     if new_id:
         r = client.delete(f"/produtos/{new_id}")
